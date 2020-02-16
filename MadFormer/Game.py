@@ -8,15 +8,18 @@ from Directions import Directions
 from Snake import Snake
 
 class AppleGenerator():
-    #Find better spawning algorithm that makes sure it spawns away from the
-    #snake, and that it spawns snapped to a grid
-    @staticmethod
-    def generate():
-        (x,y) = (int(randint(0,320)),int(randint(0,320)))
+    def __init__(self, map_size, tile_size):
+        self.map_size = map_size
+        self.tile_size = tile_size
+        self.num_tiles = map_size // tile_size
+
+    def generate(self):
+        (x,y) = (randint(0,self.num_tiles-1)*self.tile_size,
+                 randint(0,self.num_tiles-1)*self.tile_size)
         return (x,y)
 
 class Game:
-    def __init__(self, screen_size ,fps, tile_size):
+    def __init__(self, screen_size , tile_size, fps=30):
         self.win = self.createDisplay(screen_size,screen_size,"Cobra")
         self.w, self.h = screen_size, screen_size
         self.clock = pygame.time.Clock()
@@ -24,13 +27,18 @@ class Game:
         self.snake = Snake(0, self.h//2, Directions.right, tile_size)
         self.actors = [self.snake]
         self.bg_color = (0,0,0)
-        self.base_fps = fps
-        self.fast_fps = fps * 2
-        self.fps = self.base_fps
+        self.base_speed = 0.2
+        self.fast_speed = self.base_speed * 2
+        self.fps = fps
         self.score = 0
         self.apple = (self.h//2, self.w//2)
         self.padding = tile_size // 2
         self.paused = False
+        self.apple_gen = AppleGenerator(self.h, self.tile_size)
+
+    def create_text(self, text):
+        textsurface = self.font.render(text, False, (255, 255, 255))
+        return textsurface
 
     def createDisplay(self,height, width, title=None):
         win = pygame.display.set_mode((width,height), pygame.RESIZABLE)
@@ -41,6 +49,8 @@ class Game:
     def init(self):
         """intializes pygame code"""
         pygame.init()
+        self.font = pygame.font.SysFont('Comic Sans MS', 15)
+
 
     def close(self):
         pygame.quit()
@@ -53,7 +63,7 @@ class Game:
         self.actors[0] = self.snake
         self.score = 0
         self.apple = (self.h//2, self.w//2)
-        self.fps = self.base_fps
+        self.fps = self.fps
 
     def mainLoop(self):
         #initialization
@@ -63,7 +73,8 @@ class Game:
         runLoop = True
 
         self.paused = False
-        apple = AppleGenerator.generate()
+        apple = self.apple_gen.generate()
+        apple_scale = 0.8
         #add scene object
 
         while runLoop:
@@ -90,10 +101,10 @@ class Game:
             elif keys[pygame.K_SPACE]:
                 self.paused = not self.paused
             elif keys[pygame.K_TAB]:
-                if(self.fps == self.base_fps):
-                    self.fps = self.fast_fps
+                if(self.snake.speed == self.base_speed):
+                    self.snake.speed = self.fast_speed
                 else:
-                    self.fps = self.base_fps
+                    self.snake.speed = self.base_speed
             elif keys[pygame.K_r]:
                 self.reset()
             
@@ -104,7 +115,8 @@ class Game:
                    self.apple[1] >= (self.snake.segments[0][1] - self.padding) and 
                    self.apple[1] <= (self.snake.segments[0][1] + self.padding)):
                     self.snake.eat()
-                    self.apple = AppleGenerator.generate()
+                    self.score += 1
+                    self.apple = self.apple_gen.generate()
 
                 #Logic
                 for actor in self.actors:
@@ -118,13 +130,15 @@ class Game:
                             self.snake.segments[0][1] == self.snake.segments[i][1]): 
                                 runLoop = False
 
-
                 #Grahpics
                 self.win.fill(self.bg_color)
-                pygame.draw.rect(self.win,(0,255,0),(self.apple[0],self.apple[1],10,10))
+                pygame.draw.rect(self.win,(0,255,0),(self.apple[0],self.apple[1],
+                                                     self.tile_size*apple_scale,self.tile_size*apple_scale))
                 for s in self.snake.segments:
                     pygame.draw.rect(self.win, (0, 0, 255), 
                                      (s[0], s[1], self.tile_size,self.tile_size))
+                self.win.blit(self.create_text("Score: " + str(self.score)),(0,0))
+                
                 pygame.display.update()
 
         self.close()

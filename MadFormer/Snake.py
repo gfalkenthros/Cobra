@@ -7,14 +7,15 @@ class Snake(Actor):
         self.tile_size = tile_size
         #change to deque
         self.segments = [(x,y)]
+        self.speed = 0.3 # tiles per tick (e.g 0.03 tpt*34 = 1 tps)
 
     def update(self):
         
         #To move the snake we pop the end piece of its tail
         #and add a new piece to its front
         new_head_x, new_head_y = self.segments[0][0], self.segments[0][1]
-        new_head_x += self.dir_to_int()[0] * self.tile_size
-        new_head_y += self.dir_to_int()[1] * self.tile_size
+        new_head_x += self.dir_to_int()[0] * self.speed * self.tile_size
+        new_head_y += self.dir_to_int()[1] * self.speed * self.tile_size
         
         self.segments.pop()
         self.segments.insert(0, (new_head_x, new_head_y))
